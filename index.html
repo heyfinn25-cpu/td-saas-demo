@@ -1,0 +1,1364 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>OPC TD 平台原型 · 所有页面</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Microsoft YaHei", sans-serif; background:#f0f2f5; color:#1a1a2e; }
+.prototype-shell { display:flex; min-height:100vh; }
+
+/* ── 侧边导航 ── */
+.sidebar { width:220px; background:#1a1a2e; color:#c0c0d0; padding:20px 0; flex-shrink:0; }
+.sidebar .logo { padding:0 20px 24px; font-size:18px; font-weight:700; color:#fff; letter-spacing:1px; }
+.sidebar .logo span { color:#7c5cfc; }
+.sidebar .nav-section { padding:8px 20px; font-size:11px; text-transform:uppercase; letter-spacing:2px; color:#606080; margin-top:16px; }
+.sidebar .nav-item { padding:10px 20px; cursor:pointer; font-size:14px; display:flex; align-items:center; gap:8px; border-left:3px solid transparent; transition:all .15s; }
+.nav-item:focus-visible, .btn:focus-visible, .rs-btn:focus-visible, .people-card:focus-visible { outline:2px solid #7c5cfc; outline-offset:2px; }
+.sidebar .nav-item:hover { background:rgba(255,255,255,.04); color:#fff; }
+.sidebar .nav-item.active { background:rgba(124,92,252,.12); color:#7c5cfc; border-left-color:#7c5cfc; font-weight:600; }
+.sidebar .nav-icon { font-size:16px; width:20px; text-align:center; }
+.sidebar .role-badge { margin:20px 20px 0; padding:10px 12px; background:rgba(124,92,252,.15); border-radius:8px; font-size:12px; color:#b0a0f0; }
+.sidebar .role-badge strong { color:#e0d0ff; display:block; font-size:13px; }
+
+/* ── 主内容区 ── */
+.main { flex:1; padding:24px 32px; overflow-y:auto; max-height:100vh; }
+.page { display:none; }
+.page.active { display:block; }
+.page-title { font-size:22px; font-weight:700; margin-bottom:4px; }
+.page-subtitle { font-size:13px; color:#6b7280; margin-bottom:24px; }
+
+/* ── 角色切换器 ── */
+.role-switcher { display:flex; align-items:center; gap:8px; flex-wrap:wrap; background:#fff; border-radius:12px; padding:10px 16px; box-shadow:0 1px 3px rgba(0,0,0,.06); margin-bottom:20px; }
+.role-switcher .rs-label { font-size:12px; color:#6b7280; }
+.rs-btn { padding:6px 14px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; border:1px solid #d1d5db; background:#fff; color:#374151; transition:all .15s; }
+.rs-btn:hover { border-color:#7c5cfc; color:#7c5cfc; }
+.rs-btn.active { background:#7c5cfc; color:#fff; border-color:#7c5cfc; }
+
+/* ── 卡片 ── */
+.card { background:#fff; border-radius:12px; padding:20px 24px; box-shadow:0 1px 3px rgba(0,0,0,.06); margin-bottom:20px; }
+.card-header { font-size:15px; font-weight:600; margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+.card-header .icon { font-size:18px; }
+
+/* ── 统计卡片行 ── */
+.stat-row { display:grid; grid-template-columns: repeat(4,1fr); gap:16px; margin-bottom:20px; }
+.stat-card { background:#fff; border-radius:12px; padding:18px 20px; box-shadow:0 1px 3px rgba(0,0,0,.06); }
+.stat-card .label { font-size:12px; color:#6b7280; margin-bottom:6px; }
+.stat-card .value { font-size:28px; font-weight:700; }
+.stat-card .trend { font-size:12px; margin-top:4px; }
+.stat-card .trend.up { color:#059669; }
+.stat-card .trend.down { color:#dc2626; }
+.stat-card .trend.warn { color:#d97706; }
+
+/* ── 场地对比网格 ── */
+.site-compare { display:grid; grid-template-columns: repeat(3,1fr); gap:16px; }
+.site-compare-item { background:#fff; border-radius:12px; padding:18px; box-shadow:0 1px 3px rgba(0,0,0,.06); }
+.site-compare-item h3 { font-size:15px; margin-bottom:4px; }
+.site-compare-item .sub { font-size:12px; color:#6b7280; margin-bottom:14px; }
+
+/* ── 雷达图 (CSS) ── */
+.radar-container { width:200px; height:200px; position:relative; margin:0 auto; }
+.radar-bg { position:absolute; inset:0; }
+.radar-layer { fill:none; stroke:#e5e7eb; stroke-width:1; }
+.radar-area { fill:rgba(124,92,252,.15); stroke:#7c5cfc; stroke-width:2; }
+.radar-label { font-size:10px; fill:#6b7280; text-anchor:middle; }
+.radar-legend { display:flex; gap:12px; flex-wrap:wrap; margin-top:12px; }
+.radar-legend-item { display:flex; align-items:center; gap:4px; font-size:12px; }
+.radar-legend-dot { width:8px; height:8px; border-radius:50%; }
+
+/* ── 能力阶梯进度条 ── */
+.ladder { display:flex; align-items:center; gap:0; margin:8px 0; }
+.ladder-step { flex:1; height:8px; border-radius:4px; background:#e5e7eb; }
+.ladder-step.filled { background:#7c5cfc; }
+.ladder-step.current { background:#f59e0b; }
+.ladder-labels { display:flex; justify-content:space-between; font-size:11px; color:#6b7280; margin-top:4px; }
+
+/* ── 表格 ── */
+.table-wrap { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; font-size:13px; }
+th { text-align:left; padding:10px 12px; background:#f9fafb; font-weight:600; color:#374151; border-bottom:2px solid #e5e7eb; white-space:nowrap; }
+td { padding:10px 12px; border-bottom:1px solid #f3f4f6; }
+tr:hover td { background:#f9fafb; }
+
+/* ── 标签 ── */
+.tag { display:inline-block; padding:3px 8px; border-radius:6px; font-size:11px; font-weight:600; }
+.tag-purple { background:#ede9fe; color:#7c5cfc; }
+.tag-green { background:#d1fae5; color:#059669; }
+.tag-orange { background:#ffedd5; color:#d97706; }
+.tag-red { background:#fee2e2; color:#dc2626; }
+.tag-blue { background:#dbeafe; color:#2563eb; }
+
+/* ── 按钮 ── */
+.btn { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; border:none; transition:all .15s; }
+button, select { cursor:pointer; }
+.btn-primary { background:#7c5cfc; color:#fff; }
+.btn-primary:hover { background:#6a48e8; }
+.btn-secondary { background:#f3f4f6; color:#374151; }
+.btn-secondary:hover { background:#e5e7eb; }
+.btn-outline { background:#fff; border:1px solid #d1d5db; color:#374151; }
+.btn-sm { padding:6px 12px; font-size:12px; }
+
+/* ── 九宫格 ── */
+.grid-9 { display:grid; grid-template-columns: repeat(3,1fr); gap:2px; background:#e5e7eb; border-radius:12px; overflow:hidden; width:360px; }
+.grid-9-cell { background:#fff; padding:16px; text-align:center; min-height:80px; }
+.grid-9-cell .cell-label { font-size:11px; color:#6b7280; margin-bottom:4px; }
+.grid-9-cell .cell-names { font-size:12px; font-weight:600; }
+.grid-9-cell.highlight { background:#ede9fe; }
+
+/* ── 反馈流程 ── */
+.feedback-flow { display:flex; gap:0; align-items:flex-start; overflow-x:auto; padding:8px 0; }
+.flow-step { flex:0 0 180px; text-align:center; }
+.flow-step .step-num { width:32px; height:32px; border-radius:50%; background:#7c5cfc; color:#fff; line-height:32px; margin:0 auto 8px; font-size:14px; font-weight:700; }
+.flow-step .step-title { font-size:14px; font-weight:600; margin-bottom:4px; }
+.flow-step .step-desc { font-size:12px; color:#6b7280; }
+.flow-arrow { flex:0 0 40px; display:flex; align-items:center; justify-content:center; color:#9ca3af; font-size:20px; padding-top:4px; }
+
+/* ── 人物卡片 ── */
+.people-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(180px,1fr)); gap:12px; }
+.people-card { background:#fff; border-radius:12px; padding:16px; text-align:center; box-shadow:0 1px 3px rgba(0,0,0,.06); cursor:pointer; transition:all .15s; }
+.people-card:hover { box-shadow:0 4px 12px rgba(0,0,0,.1); transform:translateY(-2px); }
+.people-card .avatar { width:48px; height:48px; border-radius:50%; margin:0 auto 10px; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:700; color:#fff; }
+.people-card .name { font-size:14px; font-weight:600; }
+.people-card .role { font-size:12px; color:#6b7280; }
+.people-card .level { margin-top:6px; }
+
+/* ── 组织架构图 ── */
+.org-chart { display:flex; flex-direction:column; align-items:center; gap:0; min-width:640px; padding:20px 0; }
+.org-node { background:#fff; border-radius:10px; padding:10px 14px; text-align:center; box-shadow:0 1px 3px rgba(0,0,0,.08); cursor:pointer; transition:all .15s; min-width:120px; border:2px solid #e5e7eb; }
+.org-node:hover { box-shadow:0 4px 12px rgba(0,0,0,.12); transform:translateY(-2px); }
+.org-node.leader { border-color:#7c5cfc; background:#f5f3ff; }
+.org-node.deputy { border-color:#6366f1; }
+.org-node .org-avatar { width:32px; height:32px; border-radius:50%; margin:0 auto 6px; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:#fff; }
+.org-node .org-name { font-size:13px; font-weight:600; }
+.org-node .org-role { font-size:11px; color:#6b7280; }
+.org-vline { width:2px; height:24px; background:#d1d5db; }
+.org-children-wrap { position:relative; display:flex; flex-direction:column; align-items:center; }
+.org-hbar { position:absolute; top:0; left:0; right:0; height:2px; background:#d1d5db; }
+.org-children { display:flex; gap:24px; justify-content:center; padding-top:24px; }
+.org-branch { display:flex; flex-direction:column; align-items:center; }
+.org-vline-child { width:2px; height:24px; background:#d1d5db; }
+
+/* ── AI Agent 对话样式 ── */
+.ai-chat { background:linear-gradient(135deg,#faf5ff,#ede9fe); border-radius:12px; padding:20px; border:1px solid #ddd6fe; }
+.ai-chat .ai-header { display:flex; align-items:center; gap:8px; margin-bottom:16px; font-weight:600; }
+.ai-chat .ai-msg { background:#fff; border-radius:10px; padding:14px 16px; margin-bottom:12px; box-shadow:0 1px 2px rgba(0,0,0,.04); font-size:13px; line-height:1.6; }
+.ai-chat .ai-msg .ai-label { font-size:11px; color:#7c5cfc; font-weight:600; margin-bottom:4px; }
+.ai-chat .ai-input { display:flex; gap:8px; }
+.ai-chat .ai-input input { flex:1; padding:10px 14px; border:1px solid #ddd6fe; border-radius:8px; font-size:13px; }
+
+/* ── 响应式隐藏 ── */
+.desktop-only { }
+.mobile-note { display:none; font-size:12px; color:#9ca3af; margin-top:8px; }
+
+@media (max-width:800px) {
+  .sidebar { width:60px; }
+  .sidebar .nav-item span:not(.nav-icon) { display:none; }
+  .sidebar .logo { font-size:14px; padding:0 12px 16px; }
+  .sidebar .role-badge { display:none; }
+  .sidebar .nav-section { display:none; }
+  .main { padding:16px; }
+  .stat-row { grid-template-columns: repeat(2,1fr); }
+  .site-compare { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="prototype-shell">
+
+<!-- ════ 侧边栏 ════ -->
+<nav class="sidebar">
+  <div class="logo"><span>OPC</span> Talent</div>
+  <div class="role-badge">当前身份<br><strong id="role-badge-name">老板 · 张总</strong></div>
+  <div class="nav-section" data-section="my">我的</div>
+  <div class="nav-item" data-page="my-home" data-roles="employee"><span class="nav-icon">⌂</span> 我的主页</div>
+  <div class="nav-item" data-page="hr-workbench" data-roles="hr"><span class="nav-icon">☰</span> 流程推进台</div>
+  <div class="nav-section" data-section="org">组织视图</div>
+  <div class="nav-item active" data-page="org-dashboard" data-roles="owner hr"><span class="nav-icon">⊞</span> 组织仪表盘</div>
+  <div class="nav-item" data-page="site-dashboard" data-roles="owner hr manager"><span class="nav-icon">▦</span> 场地仪表盘</div>
+  <div class="nav-item" data-page="talent-pool" data-roles="owner hr"><span class="nav-icon">◉</span> 人才池</div>
+  <div class="nav-item" data-page="succession" data-roles="owner"><span class="nav-icon">⇄</span> 继任计划</div>
+  <div class="nav-item" data-page="knowledge" data-roles="owner hr manager employee"><span class="nav-icon">▤</span> 知识库</div>
+  <div class="nav-section" data-section="perf">绩效管理</div>
+  <div class="nav-item" data-page="perf-dashboard" data-roles="owner hr"><span class="nav-icon">▣</span> 绩效仪表盘</div>
+  <div class="nav-item" data-page="perf-form" data-roles="owner hr manager"><span class="nav-icon">▩</span> 岗位考核表</div>
+  <div class="nav-item" data-page="perf-personal" data-roles="owner hr manager employee"><span class="nav-icon">◫</span> 个人绩效</div>
+  <div class="nav-section" data-section="dev">人才发展</div>
+  <div class="nav-item" data-page="profile" data-roles="owner hr manager employee"><span class="nav-icon">◎</span> 能力画像</div>
+  <div class="nav-item" data-page="feedback" data-roles="owner hr manager employee"><span class="nav-icon">◈</span> 360 反馈</div>
+  <div class="nav-item" data-page="dev-plan" data-roles="owner hr manager employee"><span class="nav-icon">↗</span> 发展计划</div>
+  <div class="nav-item" data-page="ai-learn" data-roles="owner hr manager employee"><span class="nav-icon">✦</span> AI 学习推荐</div>
+</nav>
+
+<!-- ════ 主内容 ════ -->
+<main class="main">
+
+<!-- 角色切换器 -->
+<div class="role-switcher">
+  <span class="rs-label">演示角色切换：</span>
+  <button class="rs-btn active" data-role="owner" onclick="switchRole('owner')">老板 · 张总</button>
+  <button class="rs-btn" data-role="hr" onclick="switchRole('hr')">HR · 李华</button>
+  <button class="rs-btn" data-role="manager" onclick="switchRole('manager')">负责人 · 李明</button>
+  <button class="rs-btn" data-role="employee" onclick="switchRole('employee')">服务官 · 陈凡</button>
+</div>
+
+<!-- ───── 页面 A: 我的主页 (成长层首页) ───── -->
+<section class="page" id="my-home">
+  <h1 class="page-title">我的主页</h1><p class="page-subtitle">陈凡 · 服务官 · 杭州未科EFC OPC · L2中阶</p>
+
+  <div class="stat-row">
+    <div class="stat-card"><div class="label">我的能力均分</div><div class="value">3.4</div><div class="trend up">↑ 本季+0.2</div></div>
+    <div class="stat-card"><div class="label">本月绩效等级</div><div class="value">A</div><div class="trend up">↑ 上月B</div></div>
+    <div class="stat-card"><div class="label">待完成学习</div><div class="value">2</div><div class="trend warn">1项进行中</div></div>
+    <div class="stat-card"><div class="label">待填360</div><div class="value">1</div><div class="trend">截止11-05</div></div>
+  </div>
+
+  <!-- 画像摘要 -->
+  <div style="display:grid;grid-template-columns:300px 1fr;gap:20px;">
+    <div class="card">
+      <div class="card-header"><span class="icon">◎</span> 能力雷达摘要</div>
+      <svg viewBox="0 0 220 220" width="200" height="200">
+        <g transform="translate(110,110)">
+          <polygon points="0,-95 90,-30 56,76 -56,76 -90,-30" fill="none" stroke="#e5e7eb" stroke-width="1"/>
+          <polygon points="0,-71 68,-23 42,57 -42,57 -68,-23" fill="none" stroke="#e5e7eb" stroke-width="1"/>
+          <polygon points="0,-48 45,-15 28,38 -28,38 -45,-15" fill="none" stroke="#e5e7eb" stroke-width="1"/>
+          <polygon points="0,-24 23,-7 14,19 -14,19 -23,-7" fill="none" stroke="#e5e7eb" stroke-width="1"/>
+          <polygon points="0,-86 76,-26 44,64 -48,68 -72,-24" fill="rgba(124,92,252,.15)" stroke="#7c5cfc" stroke-width="2"/>
+          <polygon points="0,-90 80,-25 48,70 -52,70 -80,-25" fill="none" stroke="#059669" stroke-width="1.5" stroke-dasharray="4,3"/>
+        </g>
+        <text x="110" y="10" text-anchor="middle" font-size="10" fill="#374151" font-weight="600">招商力</text>
+        <text x="205" y="80" text-anchor="middle" font-size="10" fill="#374151" font-weight="600">服务力</text>
+        <text x="170" y="190" text-anchor="middle" font-size="10" fill="#374151" font-weight="600">AI力</text>
+        <text x="50" y="190" text-anchor="middle" font-size="10" fill="#374151" font-weight="600">数据力</text>
+        <text x="15" y="80" text-anchor="middle" font-size="10" fill="#374151" font-weight="600">协同力</text>
+      </svg>
+      <div style="margin-top:8px;"><button class="btn btn-primary btn-sm" onclick="switchPage('profile')">查看完整画像 →</button></div>
+    </div>
+
+    <div>
+      <div class="card"><div class="card-header"><span class="icon">◈</span> 待办事项</div>
+        <div style="font-size:13px;">
+          <div style="padding:10px 0;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;gap:8px;"><span class="tag tag-orange">本月</span> 完成 360 自评填写（截止 11-05）<button class="btn btn-sm btn-outline" style="margin-left:auto;" onclick="switchPage('feedback')">去填写</button></div>
+          <div style="padding:10px 0;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;gap:8px;"><span class="tag tag-blue">进行中</span> DeepSeek 进阶工作流搭建 <button class="btn btn-sm btn-outline" style="margin-left:auto;" onclick="switchPage('dev-plan')">看计划</button></div>
+          <div style="padding:10px 0;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;gap:8px;"><span class="tag tag-green">本月</span> 确认本月绩效目标（入驻3家）<button class="btn btn-sm btn-outline" style="margin-left:auto;" onclick="switchPage('perf-personal')">看绩效</button></div>
+          <div style="padding:10px 0;display:flex;align-items:center;gap:8px;"><span class="tag tag-blue">推荐</span> AI 学习路径已更新，2 门新课 <button class="btn btn-sm btn-primary" style="margin-left:auto;" onclick="switchPage('ai-learn')">去学习</button></div>
+        </div>
+      </div>
+
+      <div class="card"><div class="card-header"><span class="icon">↗</span> 发展计划进度</div>
+        <div style="font-size:13px;">
+          <div style="margin-bottom:10px;"><div style="display:flex;justify-content:space-between;"><span>DeepSeek 进阶工作流</span><span style="color:#7c5cfc;">60%</span></div><div style="height:6px;background:#e5e7eb;border-radius:3px;margin-top:4px;"><div style="width:60%;height:6px;background:#7c5cfc;border-radius:3px;"></div></div></div>
+          <div style="margin-bottom:10px;"><div style="display:flex;justify-content:space-between;"><span>招商渠道拓展实战(跟学李明)</span><span style="color:#6b7280;">待开始</span></div><div style="height:6px;background:#e5e7eb;border-radius:3px;margin-top:4px;"><div style="width:0%;height:6px;background:#7c5cfc;border-radius:3px;"></div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───── 页面 B: 流程推进台 (HR首页) ───── -->
+<section class="page" id="hr-workbench">
+  <h1 class="page-title">流程推进台</h1><p class="page-subtitle">HR · 李华 · 本月绩效进度 / 待发起360 / 待盘点 / 待复核偏差</p>
+
+  <div class="stat-row">
+    <div class="stat-card"><div class="label">本月绩效完成率</div><div class="value">68%</div><div class="trend warn">13/19人已评</div></div>
+    <div class="stat-card"><div class="label">待发起360</div><div class="value">3</div><div class="trend warn">负责人1人+下属2人</div></div>
+    <div class="stat-card"><div class="label">待盘点</div><div class="value">1</div><div class="trend">成都场地缺编</div></div>
+    <div class="stat-card"><div class="label">待复核偏差</div><div class="value">4</div><div class="trend down">↓ 评分偏差≥1.5</div></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+    <div class="card"><div class="card-header"><span class="icon">▣</span> 本月绩效进度</div>
+      <table><thead><tr><th>场地</th><th>应评</th><th>已评</th><th>进度</th></tr></thead>
+      <tbody>
+        <tr><td>杭州未科EFC</td><td>8</td><td>7</td><td><span class="tag tag-green">88%</span></td></tr>
+        <tr><td>上海浦东张江</td><td>8</td><td>5</td><td><span class="tag tag-orange">63%</span></td></tr>
+        <tr><td>成都武侯天府</td><td>5</td><td>1</td><td><span class="tag tag-red">20%</span></td></tr>
+      </tbody></table>
+      <div style="font-size:12px;color:#6b7280;margin-top:8px;">成都场地进度滞后，建议提醒负责人陈刚。</div>
+    </div>
+
+    <div class="card"><div class="card-header"><span class="icon">◈</span> 待发起 360</div>
+      <div style="font-size:13px;line-height:2;">
+        <div style="padding:8px 0;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;gap:8px;"><span class="tag tag-red">紧急</span> 上海负责人王芳（上季未做）<button class="btn btn-sm btn-outline" style="margin-left:auto;">发起</button></div>
+        <div style="padding:8px 0;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;gap:8px;"><span class="tag tag-orange">本月</span> 杭州服务官赵辉（L1→L2考察）<button class="btn btn-sm btn-outline" style="margin-left:auto;">发起</button></div>
+        <div style="padding:8px 0;display:flex;align-items:center;gap:8px;"><span class="tag tag-blue">计划</span> 成都运营官罗伟（低绩效复核）<button class="btn btn-sm btn-outline" style="margin-left:auto;">发起</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card"><div class="card-header"><span class="icon">⚠</span> 待复核评分偏差 <span style="font-weight:400;font-size:12px;color:#6b7280;">(上级评 vs 360均值)</span></div>
+    <table><thead><tr><th>姓名</th><th>维度</th><th>上级评</th><th>360均值</th><th>偏差</th><th>操作</th></tr></thead>
+    <tbody>
+      <tr><td><strong>陈凡</strong></td><td>AI力</td><td>3.4</td><td>2.0</td><td><span class="tag tag-orange">⚠ +1.4</span></td><td><button class="btn btn-sm btn-outline" onclick="viewPerson('陈凡','perf-personal')">复核</button></td></tr>
+      <tr><td><strong>赵辉</strong></td><td>AI力</td><td>3.0</td><td>1.5</td><td><span class="tag tag-orange">⚠ +1.5</span></td><td><button class="btn btn-sm btn-outline" onclick="viewPerson('赵辉','perf-personal')">复核</button></td></tr>
+      <tr><td><strong>杨雪</strong></td><td>AI力</td><td>2.8</td><td>1.3</td><td><span class="tag tag-orange">⚠ +1.5</span></td><td><button class="btn btn-sm btn-outline" onclick="viewPerson('杨雪','perf-personal')">复核</button></td></tr>
+    </tbody></table>
+  </div>
+</section>
+
+<!-- ───── 页面 0: 组织仪表盘 (Owner首页) ───── -->
+<section class="page active" id="org-dashboard">
+  <h1 class="page-title">组织能力仪表盘</h1>
+  <p class="page-subtitle">跨场地人才对比 · 全组织技能健康度 · 上次更新：2026-10-26</p>
+
+  <!-- 关键指标 -->
+  <div class="stat-row">
+    <div class="stat-card"><div class="label">管理场地数</div><div class="value">3</div><div class="trend up">↑ 杭州新签待启动</div></div>
+    <div class="stat-card"><div class="label">员工总数</div><div class="value">24</div><div class="trend up">↑ 含待入职3人</div></div>
+    <div class="stat-card"><div class="label">全组织AI力均分</div><div class="value">2.8</div><div class="trend warn">⚠ 目标3.5 / 5</div></div>
+    <div class="stat-card"><div class="label">可任新场地负责人</div><div class="value">2</div><div class="trend">人才池已标记</div></div>
+  </div>
+
+  <!-- 三个场地技能热力图 -->
+  <div class="card">
+    <div class="card-header"><span class="icon">⊞</span> 场地技能热力图对比</div>
+    <div class="site-compare">
+      <div class="site-compare-item">
+        <h3>杭州未科 · EFC OPC</h3>
+        <div class="sub">负责人：李明 / 8人 / 运营2年</div>
+        <table><thead><tr><th>维度</th><th>均分</th><th>趋势</th></tr></thead>
+        <tbody>
+          <tr><td>专业力</td><td><span class="tag tag-green">4.2</span></td><td>↑</td></tr>
+          <tr><td>AI力</td><td><span class="tag tag-orange">3.1</span></td><td>↑</td></tr>
+          <tr><td>数据力</td><td><span class="tag tag-green">3.8</span></td><td>→</td></tr>
+          <tr><td>协同力</td><td><span class="tag tag-purple">4.0</span></td><td>↑</td></tr>
+        </tbody></table>
+      </div>
+      <div class="site-compare-item">
+        <h3>上海浦东 · 张江OPC</h3>
+        <div class="sub">负责人：王芳 / 8人 / 运营1.5年</div>
+        <table><thead><tr><th>维度</th><th>均分</th><th>趋势</th></tr></thead>
+        <tbody>
+          <tr><td>专业力</td><td><span class="tag tag-green">3.9</span></td><td>→</td></tr>
+          <tr><td>AI力</td><td><span class="tag tag-red">2.4</span></td><td>↓</td></tr>
+          <tr><td>数据力</td><td><span class="tag tag-orange">3.2</span></td><td>↑</td></tr>
+          <tr><td>协同力</td><td><span class="tag tag-purple">3.5</span></td><td>→</td></tr>
+        </tbody></table>
+      </div>
+      <div class="site-compare-item">
+        <h3>成都武侯 · 天府OPC</h3>
+        <div class="sub">负责人：陈刚 / 5人(缺编3人) / 新开6月</div>
+        <table><thead><tr><th>维度</th><th>均分</th><th>趋势</th></tr></thead>
+        <tbody>
+          <tr><td>专业力</td><td><span class="tag tag-orange">3.1</span></td><td>↑↑</td></tr>
+          <tr><td>AI力</td><td><span class="tag tag-green">3.5</span></td><td>↑</td></tr>
+          <tr><td>数据力</td><td><span class="tag tag-red">2.6</span></td><td>↓</td></tr>
+          <tr><td>协同力</td><td><span class="tag tag-orange">3.0</span></td><td>↑</td></tr>
+        </tbody></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 关键人才标记 + 预警 -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+    <div class="card">
+      <div class="card-header"><span class="icon">✦</span> 关键人才标记</div>
+      <table><thead><tr><th>姓名</th><th>岗位</th><th>场地</th><th>标记</th></tr></thead>
+      <tbody>
+        <tr><td><strong>李明</strong></td><td>杭州负责人</td><td>未科EFC</td><td><span class="tag tag-purple">可升区域经理</span><span class="tag tag-green">可任新场地</span></td></tr>
+        <tr><td><strong>王芳</strong></td><td>上海负责人</td><td>浦东张江</td><td><span class="tag tag-blue">高潜</span></td></tr>
+        <tr><td><strong>张薇</strong></td><td>杭州副手</td><td>未科EFC</td><td><span class="tag tag-green">可任新场地负责人</span></td></tr>
+        <tr><td><strong>刘洋</strong></td><td>成都服务官</td><td>武侯天府</td><td><span class="tag tag-purple">AI力标杆</span><span class="tag tag-blue">高潜</span></td></tr>
+      </tbody></table>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="icon">⚠</span> 需关注</div>
+      <table><thead><tr><th>类型</th><th>对象</th><th>详情</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tag tag-red">能力短板</span></td><td>成都团队</td><td>数据力2.6，全组织最低</td></tr>
+        <tr><td><span class="tag tag-red">能力短板</span></td><td>上海团队</td><td>AI力2.4，连续两季下降</td></tr>
+        <tr><td><span class="tag tag-orange">缺编</span></td><td>成都场地</td><td>缺服务官2人、运营官1人</td></tr>
+        <tr><td><span class="tag tag-orange">无继任</span></td><td>上海负责人</td><td>副手未达"可代行管理",无后备</td></tr>
+      </tbody></table>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+    <div class="card">
+      <div class="card-header"><span class="icon">◉</span> 全组织AI力分布</div>
+      <div style="font-size:13px;margin-bottom:12px;">AI工具应用熟练度(全员24人)</div>
+      <div style="display:flex;gap:8px;align-items:flex-end;height:120px;">
+        <div style="flex:1;text-align:center;"><div style="background:#dc2626;height:24px;border-radius:4px 4px 0 0;"></div><div style="font-size:10px;margin-top:4px;">0-1分<br>2人</div></div>
+        <div style="flex:1;text-align:center;"><div style="background:#f59e0b;height:48px;border-radius:4px 4px 0 0;"></div><div style="font-size:10px;margin-top:4px;">1-2分<br>6人</div></div>
+        <div style="flex:1;text-align:center;"><div style="background:#f59e0b;height:72px;border-radius:4px 4px 0 0;"></div><div style="font-size:10px;margin-top:4px;">2-3分<br>8人</div></div>
+        <div style="flex:1;text-align:center;"><div style="background:#7c5cfc;height:60px;border-radius:4px 4px 0 0;"></div><div style="font-size:10px;margin-top:4px;">3-4分<br>5人</div></div>
+        <div style="flex:1;text-align:center;"><div style="background:#059669;height:36px;border-radius:4px 4px 0 0;"></div><div style="font-size:10px;margin-top:4px;">4-5分<br>3人</div></div>
+      </div>
+      <div style="font-size:12px;color:#6b7280;margin-top:8px;">目标：全组织均分3.5 · 当前2.8 · 差距0.7</div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span class="icon">⇄</span> 待办</div>
+      <div style="font-size:13px;">
+        <div style="padding:10px 0;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;gap:8px;"><span class="tag tag-red">紧急</span> 发起上海负责人王芳360评估(上季未做)</div>
+        <div style="padding:10px 0;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;gap:8px;"><span class="tag tag-orange">本月</span> 成都新入职3人完成入职关卡</div>
+        <div style="padding:10px 0;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;gap:8px;"><span class="tag tag-blue">计划</span> 杭州服务官张薇的继任准备度评估</div>
+        <div style="padding:10px 0;display:flex;align-items:center;gap:8px;"><span class="tag tag-blue">计划</span> 杭州标杆SOP推广到成都场地</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───── 页面 1: 场地仪表盘 ───── -->
+<section class="page" id="site-dashboard">
+  <h1 class="page-title" id="site-title">杭州未科 · EFC OPC</h1>
+  <p class="page-subtitle" id="site-subtitle">场地负责人：李明 · 团队8人 · 运营2年 · 上次续约2026-03</p>
+
+  <!-- 场地切换 -->
+  <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;" id="site-tabs">
+    <button class="btn btn-primary btn-sm" onclick="switchSite('杭州未科EFC')">杭州未科 · EFC</button>
+    <button class="btn btn-secondary btn-sm" onclick="switchSite('上海浦东张江')">上海浦东 · 张江</button>
+    <button class="btn btn-secondary btn-sm" onclick="switchSite('成都武侯天府')">成都武侯 · 天府</button>
+  </div>
+
+  <div class="stat-row" id="site-stats"></div>
+
+  <div class="card"><div class="card-header"><span class="icon">◎</span> 组织架构图 <span style="font-weight:400;font-size:12px;color:#6b7280;">(点击成员查看画像)</span></div>
+    <div id="org-chart" style="overflow-x:auto;"></div>
+  </div>
+</section>
+
+<!-- ───── 页面 2: 人才池 ───── -->
+<section class="page" id="talent-pool">
+  <h1 class="page-title">人才池</h1><p class="page-subtitle">全员花名册 · 跨场地 · 高潜为其中一部分 · Owner视角</p>
+
+  <div class="card"><div class="card-header"><span class="icon">◉</span> 全员花名册 <span style="font-weight:400;font-size:12px;color:#6b7280;">(24人 · 含待入职3人)</span></div>
+    <div style="font-size:12px;color:#6b7280;margin-bottom:12px;">展示所有场地、全部岗位的员工。高潜 / 可任新场地 / AI力标杆等为标记，非独立分组。点击「画像 / 360 / 计划」查看任意员工详情。</div>
+    <div class="table-wrap">
+      <table><thead><tr><th>姓名</th><th>岗位</th><th>场地</th><th>级别</th><th>标记</th><th>操作</th></tr></thead>
+      <tbody id="roster-body"></tbody></table>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+    <div class="card"><div class="card-header"><span class="icon">⇄</span> 跨场地流动建议</div>
+    <div style="font-size:13px;line-height:1.8;">
+      <div style="background:#f9fafb;border-radius:8px;padding:12px;margin-bottom:12px;">
+        <strong>杭州新场地(待启动) → 负责人人选</strong><br>
+        <span class="tag tag-green">首选: 张薇</span> 杭州副手,准备度72%<br>
+        <span class="tag tag-blue">备选: 派李明兼管</span> 但杭州续约期5个月后到<br>
+        <span style="color:#6b7280;">建议：3个月内加速张薇发展计划，目标准备度≥85%</span>
+      </div>
+      <div style="background:#f9fafb;border-radius:8px;padding:12px;margin-bottom:12px;">
+        <strong>上海AI力短板 → 人才支援</strong><br>
+        <span class="tag tag-purple">建议: 杭州周敏(L3运营官,AI4.0)</span><br>
+        <span style="color:#6b7280;">短期借调2个月，帮上海团队带教AI工具应用</span>
+      </div>
+      <div style="background:#f9fafb;border-radius:8px;padding:12px;">
+        <strong>成都缺编 × 杭州满编</strong><br>
+        <span class="tag tag-blue">考虑: 杭州服务官赵辉(L1)调成都助阵</span><br>
+        <span style="color:#6b7280;">风险：赵辉仍在L1，调离杭州最佳实践环境可能发展更慢</span>
+      </div>
+    </div></div>
+
+    <div class="card"><div class="card-header"><span class="icon">◉</span> 人才结构统计</div>
+    <div id="pool-stats" style="font-size:13px;line-height:2;"></div></div>
+  </div>
+</section>
+
+<!-- ───── 页面 3: 继任计划 ───── -->
+<section class="page" id="succession">
+  <h1 class="page-title">继任计划</h1><p class="page-subtitle">关键岗位接班人链路 · Owner视角</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+    <div class="card"><div class="card-header"><span class="icon">◎</span> 场地负责人序列</div>
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      <div style="border:1px solid #e5e7eb;border-radius:10px;padding:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div><strong>杭州未科负责人</strong><div style="font-size:12px;color:#6b7280;">现任: 李明(L2) · 在职2年 · 继任紧迫度: 低</div></div>
+          <span class="tag tag-green">有后备</span>
+        </div>
+        <div style="margin-top:12px;font-size:13px;">后备人选: <strong>张薇</strong>(副手) · 准备度 72% · 预计可接任: 2027-Q1</div>
+      </div>
+      <div style="border:1px solid #e5e7eb;border-radius:10px;padding:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div><strong>上海浦东负责人</strong><div style="font-size:12px;color:#6b7280;">现任: 王芳(L1) · 在职1.5年 · 继任紧迫度: 高</div></div>
+          <span class="tag tag-red">无后备</span>
+        </div>
+        <div style="margin-top:12px;font-size:13px;color:#dc2626;">副手未达管理门槛 · 需外部招聘或从杭州借调 · 建议6个月内解决</div>
+      </div>
+      <div style="border:1px solid #e5e7eb;border-radius:10px;padding:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div><strong>成都武侯负责人</strong><div style="font-size:12px;color:#6b7280;">现任: 陈刚(L1) · 新开6月 · 继任紧迫度: 低</div></div>
+          <span class="tag tag-orange">暂无后备</span>
+        </div>
+        <div style="margin-top:12px;font-size:13px;">团队仍在搭建 · 优先补齐缺编人员</div>
+      </div>
+    </div></div>
+
+    <div class="card"><div class="card-header"><span class="icon">⊞</span> 人才九宫格 (跨场地)</div>
+    <div class="grid-9">
+      <div class="grid-9-cell"><div class="cell-label">潜力高/绩效低</div><div class="cell-names">赵辉</div></div>
+      <div class="grid-9-cell highlight"><div class="cell-label">潜力高/绩效中</div><div class="cell-names">张薇 · 刘洋</div></div>
+      <div class="grid-9-cell"><div class="cell-label">潜力高/绩效高</div><div class="cell-names">李明 · 周敏</div></div>
+      <div class="grid-9-cell"><div class="cell-label">潜力中/绩效低</div><div class="cell-names">—</div></div>
+      <div class="grid-9-cell"><div class="cell-label">潜力中/绩效中</div><div class="cell-names">陈凡 · 林颖 · 吴涛 · 孙静</div></div>
+      <div class="grid-9-cell highlight"><div class="cell-label">潜力中/绩效高</div><div class="cell-names">王芳</div></div>
+      <div class="grid-9-cell"><div class="cell-label">潜力低/绩效低</div><div class="cell-names">—</div></div>
+      <div class="grid-9-cell"><div class="cell-label">潜力低/绩效中</div><div class="cell-names">陈刚</div></div>
+      <div class="grid-9-cell"><div class="cell-label">潜力低/绩效高</div><div class="cell-names">—</div></div>
+    </div>
+    <div style="margin-top:12px;font-size:12px;color:#6b7280;">右上角=接班梯队 / 中间=稳定贡献者 / 左下角=需关注</div></div>
+  </div>
+</section>
+
+<!-- ───── 页面 4: 个人能力画像 ───── -->
+<section class="page" id="profile">
+  <h1 class="page-title">个人能力画像</h1>
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
+    <select id="person-select" style="padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;min-width:220px;" onchange="selectPerson(this.value)"></select>
+    <span class="page-subtitle" id="profile-subtitle" style="margin-bottom:0;">陈凡 · 社区服务官 · 杭州未科EFC OPC · L2中阶</span>
+  </div>
+
+  <div style="display:grid;grid-template-columns:auto 1fr;gap:20px;">
+    <!-- 左侧: 雷达图 -->
+    <div class="card" style="width:300px;">
+      <div class="card-header"><span class="icon">◎</span> 能力雷达</div>
+      <svg viewBox="0 0 220 220" width="220" height="220">
+        <!-- 五边形背景 -->
+        <g transform="translate(110,110)">
+          <polygon points="0,-95 90,-30 56,76 -56,76 -90,-30" fill="none" stroke="#e5e7eb" stroke-width="1"/>
+          <polygon points="0,-71 68,-23 42,57 -42,57 -68,-23" fill="none" stroke="#e5e7eb" stroke-width="1"/>
+          <polygon points="0,-48 45,-15 28,38 -28,38 -45,-15" fill="none" stroke="#e5e7eb" stroke-width="1"/>
+          <polygon points="0,-24 23,-7 14,19 -14,19 -23,-7" fill="none" stroke="#e5e7eb" stroke-width="1"/>
+          <!-- 数据区域 -->
+          <polygon points="0,-86 76,-26 44,64 -48,68 -72,-24" fill="rgba(124,92,252,.15)" stroke="#7c5cfc" stroke-width="2"/>
+          <!-- 目标虚线 -->
+          <polygon points="0,-90 80,-25 48,70 -52,70 -80,-25" fill="none" stroke="#059669" stroke-width="1.5" stroke-dasharray="4,3"/>
+        </g>
+        <!-- 标签 -->
+        <text x="110" y="10" text-anchor="middle" font-size="10" fill="#374151" font-weight="600">招商力</text>
+        <text x="205" y="80" text-anchor="middle" font-size="10" fill="#374151" font-weight="600">服务力</text>
+        <text x="170" y="190" text-anchor="middle" font-size="10" fill="#374151" font-weight="600">AI力</text>
+        <text x="50" y="190" text-anchor="middle" font-size="10" fill="#374151" font-weight="600">数据力</text>
+        <text x="15" y="80" text-anchor="middle" font-size="10" fill="#374151" font-weight="600">协同力</text>
+      </svg>
+      <div class="radar-legend"><div class="radar-legend-item"><div class="radar-legend-dot" style="background:#7c5cfc;"></div>当前</div><div class="radar-legend-item"><div class="radar-legend-dot" style="background:#059669;border:1px dashed #059669;"></div>L3目标</div></div>
+      <div style="margin-top:16px;">
+        <div style="font-size:13px;font-weight:600;margin-bottom:8px;">交叉备份评分</div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;padding:6px 0;border-bottom:1px solid #f3f4f6;"><span>活动支持能力</span><span class="tag tag-green">达标</span><span style="color:#6b7280;">运营官侧评 3.2/5</span></div>
+      </div>
+    </div>
+
+    <!-- 右侧: 详情 -->
+    <div>
+      <div class="card">
+        <div class="card-header"><span class="icon">↗</span> 能力阶梯进度 · 服务官</div>
+        <div style="margin-bottom:16px;"><div style="font-size:13px;font-weight:600;margin-bottom:6px;">招商力</div><div class="ladder"><div class="ladder-step filled"></div><div class="ladder-step filled"></div><div class="ladder-step current"></div></div><div class="ladder-labels"><span>L1 执行SOP ✓</span><span>L2 制定计划 ✓</span><span>L3 开拓渠道 →</span></div></div>
+        <div style="margin-bottom:16px;"><div style="font-size:13px;font-weight:600;margin-bottom:6px;">服务力</div><div class="ladder"><div class="ladder-step filled"></div><div class="ladder-step filled"></div><div class="ladder-step current"></div></div><div class="ladder-labels"><span>L1 完成引导 ✓</span><span>L2 识别瓶颈 ✓</span><span>L3 提升满意度 →</span></div></div>
+        <div style="margin-bottom:16px;"><div style="font-size:13px;font-weight:600;margin-bottom:6px;">AI力</div><div class="ladder"><div class="ladder-step filled"></div><div class="ladder-step filled"></div><div class="ladder-step"></div></div><div class="ladder-labels"><span>L1 使用1-2个 ✓</span><span>L2 应用到工作 ✓</span><span>L3 AI驱动策略</span></div></div>
+        <div><div style="font-size:13px;font-weight:600;margin-bottom:6px;">协同力</div><div class="ladder"><div class="ladder-step filled"></div><div class="ladder-step filled"></div><div class="ladder-step"></div></div><div class="ladder-labels"><span>L1 基本备份 ✓</span><span>L2 熟练备份 ✓</span><span>L3 跨岗创新</span></div></div>
+      </div>
+
+      <div class="card"><div class="card-header"><span class="icon">◈</span> 成长时间线</div>
+      <div style="font-size:13px;line-height:2;">
+        <div>2026-09 <span class="tag tag-purple">晋升</span> L1→L2 中阶服务官</div>
+        <div>2026-06 <span class="tag tag-green">完成</span> AI工具应用培训(DeepSeek+Midjourney)</div>
+        <div>2026-03 <span class="tag tag-blue">达标</span> 交叉备份·活动支持能力</div>
+        <div>2025-11 <span class="tag tag-green">入职</span> 杭州未科EFC OPC 服务官</div>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ───── 页面 5: 360 反馈 ───── -->
+<section class="page" id="feedback">
+  <h1 class="page-title">360 反馈</h1>
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
+    <select id="feedback-person-select" style="padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;min-width:220px;" onchange="selectPerson(this.value)"></select>
+    <span class="page-subtitle" style="margin-bottom:0;">轻量级多源评估 · 无账号外部评价入口</span>
+  </div>
+
+  <!-- 流程说明 -->
+  <div class="card"><div class="card-header"><span class="icon">◈</span> 评估流程</div>
+  <div class="feedback-flow">
+    <div class="flow-step"><div class="step-num">1</div><div class="step-title">选择被评人</div><div class="step-desc">负责人选择下属<br>或Owner选负责人</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step"><div class="step-num">2</div><div class="step-title">选择评价人</div><div class="step-desc">老板/同事/创业者<br>至少3个视角</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step"><div class="step-num">3</div><div class="step-title">发送评价链接</div><div class="step-desc">外部创业者<br>链接即填,无账号</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step"><div class="step-num">4</div><div class="step-title">收集反馈</div><div class="step-desc">匿名或实名<br>5-8个行为问题</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step"><div class="step-num">5</div><div class="step-title">生成报告</div><div class="step-desc">优势/待发展维度<br>→ 触发发展计划</div></div>
+  </div></div>
+
+  <!-- 服务官360示例 -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+    <div class="card"><div class="card-header"><span class="icon">◈</span> <span id="feedback-name">陈凡</span> · 360结果 (2026-Q3)</div>
+      <table><thead><tr><th>评估维度</th><th>自评</th><th>创业者评分</th><th>同事评分</th><th>上级评分</th></tr></thead>
+      <tbody>
+        <tr><td>响应速度</td><td>4</td><td><strong>3.8</strong> (12人)</td><td>4.2</td><td>4.0</td></tr>
+        <tr><td>问题解决能力</td><td>3</td><td><strong>3.5</strong></td><td>3.8</td><td>3.5</td></tr>
+        <tr><td>主动服务意识</td><td>4</td><td><strong>4.5</strong></td><td>4.3</td><td>4.0</td></tr>
+        <tr><td>社群互动组织</td><td>3</td><td><strong>4.0</strong></td><td>3.5</td><td>3.5</td></tr>
+        <tr><td>AI工具应用</td><td>2</td><td>—</td><td>2.5</td><td>2.0</td></tr>
+      </tbody></table>
+      <div style="margin-top:16px;padding:14px;background:#f9fafb;border-radius:8px;font-size:13px;">
+        <strong>优势维度：</strong>主动服务意识(4.3)、社群互动组织(3.7)<br>
+        <strong>待发展维度：</strong>AI工具应用(2.2) ← <span style="color:#7c5cfc;">触发AI学习路径推荐</span>
+      </div>
+    </div>
+
+    <div class="card"><div class="card-header"><span class="icon">←</span> 外部评价入口(创业者端)</div>
+      <div style="background:#f9fafb;border-radius:10px;padding:20px;text-align:center;font-size:13px;">
+        <div style="font-size:48px;margin-bottom:12px;">🔗</div>
+        <div style="font-weight:600;margin-bottom:8px;">评价链接已生成</div>
+        <div style="background:#fff;border:1px dashed #d1d5db;border-radius:8px;padding:10px;margin-bottom:12px;color:#7c5cfc;word-break:break-all;">td.opc.cc/feedback/a7f3b2c9</div>
+        <div style="color:#6b7280;margin-bottom:16px;">无需注册 · 5分钟完成 · 匿名/实名可选</div>
+        <button class="btn btn-primary btn-sm">复制链接发送</button>
+      </div>
+      <div style="margin-top:16px;font-size:13px;color:#6b7280;">
+        评价内容示例：<br>
+        "入驻以来，遇到问题找陈凡基本上半天内有回复，主动帮我们对接了杭州AI社区的导师资源，非常满意。"
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───── 页面 6: 发展计划 ───── -->
+<section class="page" id="dev-plan">
+  <h1 class="page-title">发展计划</h1>
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
+    <select id="devplan-person-select" style="padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;min-width:220px;" onchange="selectPerson(this.value)"></select>
+    <span class="page-subtitle" id="devplan-subtitle" style="margin-bottom:0;">陈凡 · 服务官 · 目标: L3高阶服务官</span>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+    <div class="card"><div class="card-header"><span class="icon">↗</span> 岗位差距清单 (当前 L2 → 目标 L3)</div>
+    <table><thead><tr><th>能力项</th><th>当前</th><th>目标</th><th>差距</th><th>行动</th></tr></thead>
+    <tbody>
+      <tr><td>招商力·开拓新渠道</td><td>2.5</td><td>3.5</td><td><span class="tag tag-red">-1.0</span></td><td><button class="btn btn-sm btn-primary">添加学习</button></td></tr>
+      <tr><td>服务力·提升满意度</td><td>3.0</td><td>4.0</td><td><span class="tag tag-orange">-1.0</span></td><td><button class="btn btn-sm btn-primary">添加学习</button></td></tr>
+      <tr><td>AI力·AI驱动策略</td><td>2.8</td><td>4.0</td><td><span class="tag tag-red">-1.2</span></td><td><span class="tag tag-green">已添加→</span></td></tr>
+      <tr><td>协同力·跨岗创新</td><td>3.2</td><td>3.5</td><td><span class="tag tag-blue">-0.3</span></td><td><button class="btn btn-sm btn-outline">可选</button></td></tr>
+    </tbody></table></div>
+
+    <div class="card"><div class="card-header"><span class="icon">↗</span> 当前学习计划</div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div style="border:1px solid #e5e7eb;border-radius:10px;padding:14px;display:flex;align-items:center;gap:12px;">
+        <div style="width:36px;height:36px;border-radius:50%;background:#d1fae5;display:flex;align-items:center;justify-content:center;">✓</div>
+        <div style="flex:1;"><strong>参加杭州AI社区线下交流会</strong><div style="font-size:12px;color:#6b7280;">已完成 · 2026-09</div></div>
+        <span class="tag tag-green">AI力+0.3</span>
+      </div>
+      <div style="border:1px solid #e5e7eb;border-radius:10px;padding:14px;display:flex;align-items:center;gap:12px;">
+        <div style="width:36px;height:36px;border-radius:50%;background:#fef3c7;display:flex;align-items:center;justify-content:center;">→</div>
+        <div style="flex:1;"><strong>DeepSeek 进阶工作流搭建</strong><div style="font-size:12px;color:#6b7280;">进行中 · 目标完成: 2026-11</div></div>
+        <span class="tag tag-orange">AI力目标+0.8</span>
+      </div>
+      <div style="border:1px solid #e5e7eb;border-radius:10px;padding:14px;display:flex;align-items:center;gap:12px;">
+        <div style="width:36px;height:36px;border-radius:50%;background:#ede9fe;display:flex;align-items:center;justify-content:center;">○</div>
+        <div style="flex:1;"><strong>招商渠道拓展实战(跟学李明)</strong><div style="font-size:12px;color:#6b7280;">待开始 · 计划: 2026-12</div></div>
+        <span class="tag tag-purple">招商力目标+1.0</span>
+      </div>
+    </div></div>
+  </div>
+</section>
+
+<!-- ───── 页面 7: AI 学习推荐 ───── -->
+<section class="page" id="ai-learn">
+  <h1 class="page-title">AI 学习推荐</h1><p class="page-subtitle">技能差距分析 Agent · 学习资源匹配 Agent</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+    <div class="card">
+      <div class="card-header"><span class="icon">✦</span> Agent #1: 技能差距分析</div>
+      <div class="ai-chat">
+        <div class="ai-msg">
+          <div class="ai-label">AI Agent · 基于360结果+能力模型</div>
+          <strong>陈凡的差距分析报告 (2026-Q3)</strong><br><br>
+          <strong>最大短板：AI工具应用 (2.2/5, 低于同级均值3.0)</strong><br>
+          • 360反馈中，上级和同事均指出"AI工具使用停留在基础阶段"<br>
+          • 作为L2中阶服务官，AI力需≥3.0才能支撑L3晋升<br>
+          • 交叉备份要求中，"活动支持能力"的AI内容生成部分未达标<br><br>
+          <strong>次要短板：招商渠道开拓 (2.5/5, L3要求≥3.5)</strong><br>
+          • 当前仅执行招商SOP，未主动开拓新渠道<br>
+          • 建议优先补齐AI力，再用AI能力辅助招商<br><br>
+          <strong>推荐优先级：</strong>AI力(紧迫) > 招商力(重要) > 服务力(保持)
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span class="icon">✦</span> Agent #2: 学习资源推荐</div>
+      <div class="ai-chat">
+        <div class="ai-msg">
+          <div class="ai-label">AI Agent · 基于差距 → 资源匹配</div>
+          <strong>为陈凡推荐的学习资源</strong><br><br>
+          <strong>🎯 针对 AI力 (2.2→4.0)</strong><br>
+          ① DeepSeek进阶：自动化入驻者需求分析工作流搭建 (2周)<br>
+          ② Midjourney实战：社群活动海报AI生成 (1周)<br>
+          ③ AI社群运营工具链：自动回复+数据看板 (2周)<br><br>
+          <strong>🎯 针对 招商力 (2.5→3.5)</strong><br>
+          ④ 跟学杭州负责人李明：渠道开拓实战 (1个月,on-job)<br>
+          ⑤ 课程：B2B社区招商方法论 (外部,推荐)<br><br>
+        </div>
+        <button class="btn btn-primary btn-sm" style="margin-top:8px;">添加到发展计划</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───── 页面 8: 知识库/SOP ───── -->
+<section class="page" id="knowledge">
+  <h1 class="page-title">知识库</h1><p class="page-subtitle">SOP模板库 · 最佳实践案例 · 标杆推广</p>
+
+  <div style="display:grid;grid-template-columns:2fr 1fr;gap:20px;">
+    <div class="card"><div class="card-header"><span class="icon">▤</span> SOP 模板库</div>
+    <table><thead><tr><th>名称</th><th>来源场地</th><th>类型</th><th>更新</th><th>状态</th><th>操作</th></tr></thead>
+    <tbody>
+      <tr><td>入驻引导SOP v2.3</td><td>杭州未科</td><td>服务官</td><td>2026-09</td><td><span class="tag tag-purple">全组织标准</span></td><td><button class="btn btn-sm btn-outline">查看</button></td></tr>
+      <tr><td>招商计划模板</td><td>杭州未科</td><td>服务官</td><td>2026-08</td><td><span class="tag tag-purple">全组织标准</span></td><td><button class="btn btn-sm btn-outline">查看</button></td></tr>
+      <tr><td>活动策划SOP v1.8</td><td>上海浦东</td><td>运营官</td><td>2026-10</td><td><span class="tag tag-blue">本场地</span></td><td><button class="btn btn-sm btn-outline">查看</button></td></tr>
+      <tr><td>新媒体内容日历模板</td><td>杭州未科</td><td>运营官</td><td>2026-07</td><td><span class="tag tag-purple">全组织标准</span></td><td><button class="btn btn-sm btn-outline">查看</button></td></tr>
+      <tr><td>OPC创业者满意度调研SOP</td><td>成都武侯</td><td>服务官</td><td>2026-10</td><td><span class="tag tag-green">新建</span></td><td><button class="btn btn-sm btn-outline">查看</button></td></tr>
+      <tr><td>Demo Day执行手册</td><td>杭州未科</td><td>运营官</td><td>2026-06</td><td><span class="tag tag-blue">本场地</span></td><td><button class="btn btn-sm btn-outline">查看</button></td></tr>
+    </tbody></table></div>
+
+    <div class="card"><div class="card-header"><span class="icon">✦</span> 标杆推广 (Owner)</div>
+      <div style="font-size:13px;line-height:1.8;">
+        <div style="background:#ede9fe;border-radius:8px;padding:12px;margin-bottom:12px;">
+          <strong>上海活动策划SOP v1.8</strong><br>
+          <span style="color:#6b7280;">当前：仅上海浦东使用</span><br>
+          <button class="btn btn-primary btn-sm" style="margin-top:8px;">一键设为全组织标准</button>
+        </div>
+        <div style="font-size:12px;color:#6b7280;margin-bottom:12px;">
+          设为标准后：<br>
+          · 杭州、成都发展计划自动引用此SOP<br>
+          · 新人入职关卡自动加载为必修<br>
+          · 场地负责人在组织仪表盘可见推广状态
+        </div>
+        <div style="background:#f9fafb;border-radius:8px;padding:12px;">
+          <strong>已推广的标准</strong><br>
+          入驻引导SOP v2.3 · 招商计划模板 · 内容日历模板
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───── 页面 9: 绩效仪表盘 ───── -->
+<section class="page" id="perf-dashboard">
+  <h1 class="page-title">绩效仪表盘</h1><p class="page-subtitle">各场地绩效均分 · 达标率 · 低绩效预警 · 绩效×潜力联动</p>
+
+  <div class="stat-row">
+    <div class="stat-card"><div class="label">全组织绩效均分</div><div class="value">3.6</div><div class="trend up">↑ 近4期稳定</div></div>
+    <div class="stat-card"><div class="label">达标率(B及以上)</div><div class="value">79%</div><div class="trend warn">19/24人</div></div>
+    <div class="stat-card"><div class="label">低绩效预警</div><div class="value">3</div><div class="trend down">↓ 连续2期C</div></div>
+    <div class="stat-card"><div class="label">绩效×高潜联动</div><div class="value">4</div><div class="trend">S/A×高潜</div></div>
+  </div>
+
+  <div class="card"><div class="card-header"><span class="icon">▣</span> 各场地绩效对比 (本月)</div>
+    <div class="site-compare">
+      <div class="site-compare-item">
+        <h3>杭州未科 · EFC OPC</h3><div class="sub">负责人：李明 / 8人</div>
+        <table><thead><tr><th>维度</th><th>结果指标</th><th>能力行为</th><th>综合</th></tr></thead>
+        <tbody>
+          <tr><td>场地均分</td><td><span class="tag tag-green">3.9</span></td><td><span class="tag tag-green">3.8</span></td><td><span class="tag tag-green">3.9</span></td></tr>
+          <tr><td>达标率</td><td colspan="3">88% (7/8人)</td></tr>
+        </tbody></table>
+      </div>
+      <div class="site-compare-item">
+        <h3>上海浦东 · 张江OPC</h3><div class="sub">负责人：王芳 / 8人</div>
+        <table><thead><tr><th>维度</th><th>结果指标</th><th>能力行为</th><th>综合</th></tr></thead>
+        <tbody>
+          <tr><td>场地均分</td><td><span class="tag tag-orange">3.2</span></td><td><span class="tag tag-orange">3.1</span></td><td><span class="tag tag-orange">3.2</span></td></tr>
+          <tr><td>达标率</td><td colspan="3">63% (5/8人)</td></tr>
+        </tbody></table>
+      </div>
+      <div class="site-compare-item">
+        <h3>成都武侯 · 天府OPC</h3><div class="sub">负责人：陈刚 / 5人</div>
+        <table><thead><tr><th>维度</th><th>结果指标</th><th>能力行为</th><th>综合</th></tr></thead>
+        <tbody>
+          <tr><td>场地均分</td><td><span class="tag tag-red">2.7</span></td><td><span class="tag tag-orange">2.9</span></td><td><span class="tag tag-orange">2.8</span></td></tr>
+          <tr><td>达标率</td><td colspan="3">40% (2/5人)</td></tr>
+        </tbody></table>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+    <div class="card"><div class="card-header"><span class="icon">⚠</span> 低绩效预警</div>
+      <table><thead><tr><th>姓名</th><th>场地</th><th>连续C期数</th><th>短板项</th><th>触发</th></tr></thead>
+      <tbody>
+        <tr><td><strong>钱丽</strong></td><td>上海浦东张江</td><td>2期</td><td>结果指标·入驻数</td><td><span class="tag tag-red">已触发发展计划</span></td></tr>
+        <tr><td><strong>杨雪</strong></td><td>上海浦东张江</td><td>2期</td><td>能力行为·AI力</td><td><span class="tag tag-red">已触发发展计划</span></td></tr>
+        <tr><td><strong>罗伟</strong></td><td>成都武侯天府</td><td>2期</td><td>结果指标·活动场次</td><td><span class="tag tag-orange">待确认</span></td></tr>
+      </tbody></table>
+    </div>
+    <div class="card"><div class="card-header"><span class="icon">✦</span> 绩效×潜力联动 (S/A × 高潜)</div>
+      <div style="font-size:13px;line-height:2;">
+        <div style="background:#ede9fe;border-radius:8px;padding:12px;margin-bottom:10px;"><strong>李明</strong> <span class="tag tag-green">S</span><span class="tag tag-blue">高潜</span> → 继任候选·区域经理</div>
+        <div style="background:#ede9fe;border-radius:8px;padding:12px;margin-bottom:10px;"><strong>张薇</strong> <span class="tag tag-green">A</span><span class="tag tag-green">可任新场地</span> → 新场地负责人首选</div>
+        <div style="background:#ede9fe;border-radius:8px;padding:12px;margin-bottom:10px;"><strong>刘洋</strong> <span class="tag tag-green">A</span><span class="tag tag-blue">高潜</span> → 高潜保留</div>
+        <div style="background:#ede9fe;border-radius:8px;padding:12px;"><strong>周敏</strong> <span class="tag tag-green">S</span><span class="tag tag-purple">AI力标杆</span> → 借调支援上海AI力</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card"><div class="card-header"><span class="icon">⚠</span> 评分偏差校验 <span style="font-weight:400;font-size:12px;color:#6b7280;">(上级评 vs 360多源均值 · 偏差≥1.5需复核)</span></div>
+    <table><thead><tr><th>姓名</th><th>场地</th><th>维度</th><th>上级评</th><th>360多源均值</th><th>偏差</th><th>状态</th></tr></thead>
+    <tbody>
+      <tr><td><strong>陈凡</strong></td><td>杭州未科EFC</td><td>AI力</td><td>3.4</td><td>2.0</td><td><span class="tag tag-orange">⚠ +1.4</span></td><td><button class="btn btn-sm btn-outline" onclick="viewPerson('陈凡','perf-personal')">复核</button></td></tr>
+      <tr><td><strong>陈凡</strong></td><td>杭州未科EFC</td><td>数据力</td><td>3.5</td><td>2.1</td><td><span class="tag tag-orange">⚠ +1.4</span></td><td><button class="btn btn-sm btn-outline" onclick="viewPerson('陈凡','perf-personal')">复核</button></td></tr>
+      <tr><td><strong>赵辉</strong></td><td>杭州未科EFC</td><td>AI力</td><td>3.0</td><td>1.5</td><td><span class="tag tag-orange">⚠ +1.5</span></td><td><button class="btn btn-sm btn-outline" onclick="viewPerson('赵辉','perf-personal')">复核</button></td></tr>
+      <tr><td><strong>杨雪</strong></td><td>上海浦东张江</td><td>AI力</td><td>2.8</td><td>1.3</td><td><span class="tag tag-orange">⚠ +1.5</span></td><td><button class="btn btn-sm btn-outline" onclick="viewPerson('杨雪','perf-personal')">复核</button></td></tr>
+    </tbody></table>
+    <div style="font-size:12px;color:#6b7280;margin-top:8px;">偏差≥1.5 标黄提示：上级评分可能偏高(亲疏/近因效应)，建议老板复核后再确定能力行为得分。</div>
+  </div>
+</section>
+
+<!-- ───── 页面 10: 岗位考核表 ───── -->
+<section class="page" id="perf-form">
+  <h1 class="page-title">岗位考核表</h1><p class="page-subtitle">4岗位+副手模板 · 维度/权重/评分标准 · 结果指标60% + 能力行为40%</p>
+
+  <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;" id="perf-form-tabs">
+    <button class="btn btn-primary btn-sm" onclick="switchPerfForm('服务官')">服务官</button>
+    <button class="btn btn-secondary btn-sm" onclick="switchPerfForm('运营官')">运营官</button>
+    <button class="btn btn-secondary btn-sm" onclick="switchPerfForm('行政')">行政</button>
+    <button class="btn btn-secondary btn-sm" onclick="switchPerfForm('副手')">副手</button>
+    <button class="btn btn-secondary btn-sm" onclick="switchPerfForm('场地负责人')">场地负责人</button>
+  </div>
+
+  <div id="perf-form-content"></div>
+</section>
+
+<!-- ───── 页面 11: 个人绩效 ───── -->
+<section class="page" id="perf-personal">
+  <h1 class="page-title">个人绩效</h1>
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+    <select id="perf-person-select" style="padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;min-width:220px;" onchange="selectPerson(this.value)"></select>
+    <span class="page-subtitle" id="perf-subtitle" style="margin-bottom:0;">陈凡 · 服务官 · 杭州未科EFC OPC</span>
+  </div>
+
+  <div style="display:flex;gap:8px;margin-bottom:20px;">
+    <button class="btn btn-primary btn-sm" id="perf-tab-month" onclick="switchPerfTab('month')">本月绩效</button>
+    <button class="btn btn-secondary btn-sm" id="perf-tab-history" onclick="switchPerfTab('history')">历史绩效</button>
+  </div>
+
+  <!-- 本月绩效 -->
+  <div id="perf-month">
+    <div class="card"><div class="card-header"><span class="icon">◫</span> 本月考核流程 (2026-10)</div>
+      <div class="feedback-flow">
+        <div class="flow-step"><div class="step-num">1</div><div class="step-title">月初定目标</div><div class="step-desc">上级+本人<br>确认结果指标目标</div></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step"><div class="step-num">2</div><div class="step-title">月中更新</div><div class="step-desc">录入结果数据<br>自动算60%</div></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step"><div class="step-num">3</div><div class="step-title">月末自评</div><div class="step-desc">能力行为40%<br>自评对照</div></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step"><div class="step-num">4</div><div class="step-title">上级评分</div><div class="step-desc">负责人评下属<br>老板评负责人</div></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step"><div class="step-num">5</div><div class="step-title">出结果</div><div class="step-desc">S/A/B/C/D<br>回写画像+九宫格</div></div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+      <div class="card"><div class="card-header"><span class="icon">▩</span> 结果指标 (60%)</div>
+        <table><thead><tr><th>指标</th><th>目标</th><th>实际</th><th>得分</th></tr></thead>
+        <tbody id="perf-result-body"></tbody></table>
+      </div>
+      <div class="card"><div class="card-header"><span class="icon">◎</span> 能力行为 (40%) <span style="font-weight:400;font-size:12px;color:#6b7280;">· 360偏差校验</span></div>
+        <table><thead><tr><th>维度</th><th>自评</th><th>上级评</th><th>360多源均值</th><th>偏差</th></tr></thead>
+        <tbody id="perf-behavior-body"></tbody></table>
+      </div>
+    </div>
+
+    <div class="card"><div class="card-header"><span class="icon">◫</span> 本月综合</div>
+      <div id="perf-total" style="font-size:14px;"></div>
+    </div>
+  </div>
+
+  <!-- 历史绩效 -->
+  <div id="perf-history" style="display:none;">
+    <div class="card"><div class="card-header"><span class="icon">◫</span> 历史绩效趋势 (近12期)</div>
+      <div id="perf-history-chart" style="display:flex;gap:6px;align-items:flex-end;height:160px;padding:10px 0;"></div>
+      <div style="font-size:12px;color:#6b7280;margin-top:8px;">等级映射：S=5 / A=4 / B=3 / C=2 / D=1 · 季度加权 = 月度×70% + 季度×30%(仅负责人)</div>
+    </div>
+    <div class="card"><div class="card-header"><span class="icon">◫</span> 历史明细</div>
+      <table><thead><tr><th>周期</th><th>结果指标</th><th>能力行为</th><th>综合</th><th>等级</th></tr></thead>
+      <tbody id="perf-history-body"></tbody></table>
+    </div>
+  </div>
+</section>
+
+</main>
+</div>
+
+<script>
+// ── 全员数据模型 ──
+// 场地: 杭州未科EFC(8人) · 上海浦东张江(8人) · 成都武侯天府(5人) · 待入职(3人)
+const EMPLOYEES = [
+  // ── 杭州未科 EFC OPC (8人) ──
+  { name:"李明", role:"场地负责人", site:"杭州未科EFC", level:"L2", tags:["可升区域经理","可任新场地"], hp:85 },
+  { name:"张薇", role:"副手", site:"杭州未科EFC", level:"L2", tags:["可任新场地负责人"], hp:72 },
+  { name:"陈凡", role:"服务官", site:"杭州未科EFC", level:"L2", tags:[], hp:55 },
+  { name:"林颖", role:"服务官", site:"杭州未科EFC", level:"L2", tags:[], hp:50 },
+  { name:"赵辉", role:"服务官", site:"杭州未科EFC", level:"L1", tags:[], hp:35 },
+  { name:"周敏", role:"运营官", site:"杭州未科EFC", level:"L3", tags:["AI力标杆"], hp:60 },
+  { name:"吴涛", role:"运营官", site:"杭州未科EFC", level:"L2", tags:[], hp:48 },
+  { name:"孙静", role:"行政", site:"杭州未科EFC", level:"L2", tags:[], hp:40 },
+  // ── 上海浦东 张江OPC (8人) ──
+  { name:"王芳", role:"场地负责人", site:"上海浦东张江", level:"L1", tags:["高潜"], hp:45 },
+  { name:"郑强", role:"副手", site:"上海浦东张江", level:"L2", tags:[], hp:42 },
+  { name:"李娜", role:"服务官", site:"上海浦东张江", level:"L2", tags:[], hp:52 },
+  { name:"周杰", role:"服务官", site:"上海浦东张江", level:"L1", tags:[], hp:38 },
+  { name:"钱丽", role:"服务官", site:"上海浦东张江", level:"L1", tags:[], hp:30 },
+  { name:"孙磊", role:"运营官", site:"上海浦东张江", level:"L2", tags:[], hp:46 },
+  { name:"杨雪", role:"运营官", site:"上海浦东张江", level:"L1", tags:[], hp:33 },
+  { name:"朱敏", role:"行政", site:"上海浦东张江", level:"L2", tags:[], hp:41 },
+  // ── 成都武侯 天府OPC (5人, 缺编3人) ──
+  { name:"陈刚", role:"场地负责人", site:"成都武侯天府", level:"L1", tags:[], hp:44 },
+  { name:"刘洋", role:"服务官", site:"成都武侯天府", level:"L2", tags:["AI力标杆","高潜"], hp:58 },
+  { name:"何静", role:"服务官", site:"成都武侯天府", level:"L1", tags:[], hp:36 },
+  { name:"罗伟", role:"运营官", site:"成都武侯天府", level:"L1", tags:[], hp:32 },
+  { name:"邓丽", role:"行政", site:"成都武侯天府", level:"L1", tags:[], hp:29 },
+  // ── 待入职 (3人) ──
+  { name:"高远", role:"服务官(待入职)", site:"成都武侯天府", level:"—", tags:["待入职"], hp:0 },
+  { name:"唐敏", role:"服务官(待入职)", site:"成都武侯天府", level:"—", tags:["待入职"], hp:0 },
+  { name:"蒋涛", role:"运营官(待入职)", site:"成都武侯天府", level:"—", tags:["待入职"], hp:0 },
+];
+
+const TAG_CLASS = {
+  "可升区域经理":"tag-purple", "可任新场地":"tag-green", "可任新场地负责人":"tag-green",
+  "AI力标杆":"tag-purple", "高潜":"tag-blue", "待入职":"tag-orange"
+};
+
+function tagHtml(tags){
+  return (tags||[]).map(t => `<span class="tag ${TAG_CLASS[t]||'tag-blue'}">${t}</span>`).join(' ');
+}
+
+// ── 渲染人才池全员花名册 ──
+function renderRoster(){
+  const body = document.getElementById('roster-body');
+  body.innerHTML = EMPLOYEES.map(e => {
+    const actions = `<button class="btn btn-sm btn-outline" onclick="viewPerson('${e.name}','profile')">画像</button>
+                     <button class="btn btn-sm btn-outline" onclick="viewPerson('${e.name}','feedback')">360</button>
+                     <button class="btn btn-sm btn-outline" onclick="viewPerson('${e.name}','dev-plan')">计划</button>`;
+    return `<tr>
+      <td><strong>${e.name}</strong></td>
+      <td>${e.role}</td>
+      <td>${e.site}</td>
+      <td>${e.level}</td>
+      <td>${tagHtml(e.tags)}</td>
+      <td style="white-space:nowrap;">${actions}</td>
+    </tr>`;
+  }).join('');
+
+  // 人才结构统计
+  const sites = {};
+  EMPLOYEES.forEach(e => { sites[e.site] = (sites[e.site]||0)+1; });
+  const roles = {};
+  EMPLOYEES.forEach(e => { const r = e.role.replace('(待入职)',''); roles[r] = (roles[r]||0)+1; });
+  const highPot = EMPLOYEES.filter(e => (e.tags||[]).includes('高潜')).length;
+  const stats = document.getElementById('pool-stats');
+  stats.innerHTML = `
+    <div><strong>总人数：</strong>${EMPLOYEES.length} 人（含待入职 3 人）</div>
+    <div><strong>按场地：</strong>${Object.entries(sites).map(([k,v])=>`${k} ${v}人`).join(' · ')}</div>
+    <div><strong>按岗位：</strong>${Object.entries(roles).map(([k,v])=>`${k} ${v}人`).join(' · ')}</div>
+    <div><strong>高潜标记：</strong>${highPot} 人 <span style="color:#6b7280;">（高潜是全员中的标记，非独立名单）</span></div>`;
+}
+
+// ── 填充人员下拉框 ──
+function fillSelects(){
+  const opts = EMPLOYEES.map(e => `<option value="${e.name}">${e.name} · ${e.role} · ${e.site}</option>`).join('');
+  ['person-select','feedback-person-select','devplan-person-select','perf-person-select'].forEach(id => {
+    const sel = document.getElementById(id);
+    if(sel) sel.innerHTML = opts;
+  });
+}
+
+// ── 选择人员(同步所有下拉框 + 更新标题) ──
+function selectPerson(name){
+  const emp = EMPLOYEES.find(e => e.name === name);
+  if(!emp) return;
+  ['person-select','feedback-person-select','devplan-person-select','perf-person-select'].forEach(id => {
+    const sel = document.getElementById(id);
+    if(sel) sel.value = name;
+  });
+  // 画像页副标题
+  const ps = document.getElementById('profile-subtitle');
+  if(ps) ps.textContent = `${emp.name} · ${emp.role} · ${emp.site} · ${emp.level}`;
+  // 发展计划页副标题
+  const ds = document.getElementById('devplan-subtitle');
+  if(ds) ds.textContent = `${emp.name} · ${emp.role} · 目标: 下一级`;
+  // 360页标题
+  const fn = document.getElementById('feedback-name');
+  if(fn) fn.textContent = emp.name;
+  // 个人绩效页副标题
+  const pf = document.getElementById('perf-subtitle');
+  if(pf) pf.textContent = `${emp.name} · ${emp.role} · ${emp.site}`;
+  // 个人绩效内容刷新
+  if(document.getElementById('perf-result-body')) renderPerf(name);
+}
+
+// ── 从人才池跳转到某人某页 ──
+function viewPerson(name, pageId){
+  selectPerson(name);
+  switchPage(pageId);
+}
+
+// ── 页面切换(统一入口) ──
+function switchPage(pageId){
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const nav = document.querySelector(`.nav-item[data-page="${pageId}"]`);
+  if(nav) nav.classList.add('active');
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const pg = document.getElementById(pageId);
+  if(pg) pg.classList.add('active');
+  window.scrollTo(0,0);
+}
+
+// ── 角色切换 ──
+const ROLE_INFO = {
+  owner:    { label:"老板 · 张总", home:"org-dashboard" },
+  hr:       { label:"HR · 李华", home:"hr-workbench" },
+  manager:  { label:"负责人 · 李明", home:"site-dashboard" },
+  employee: { label:"服务官 · 陈凡", home:"my-home" }
+};
+
+function switchRole(role){
+  // 切换按钮高亮
+  document.querySelectorAll('.rs-btn').forEach(b => b.classList.toggle('active', b.dataset.role === role));
+  // 更新侧边栏身份
+  document.getElementById('role-badge-name').textContent = ROLE_INFO[role].label;
+  // 按角色显隐导航项
+  document.querySelectorAll('.nav-item').forEach(item => {
+    const roles = (item.dataset.roles || '').split(' ');
+    item.style.display = roles.includes(role) ? 'flex' : 'none';
+  });
+  // 按角色显隐导航分区(该分区下无可见项则隐藏)
+  document.querySelectorAll('.nav-section').forEach(sec => {
+    let hasVisible = false;
+    let sibling = sec.nextElementSibling;
+    while(sibling && !sibling.classList.contains('nav-section')){
+      if(sibling.classList.contains('nav-item') && sibling.style.display !== 'none') hasVisible = true;
+      sibling = sibling.nextElementSibling;
+    }
+    sec.style.display = hasVisible ? 'block' : 'none';
+  });
+  // 切换人员选择器默认值(员工视角固定陈凡, 负责人视角固定李明)
+  if(role === 'employee') selectPerson('陈凡');
+  else if(role === 'manager') selectPerson('李明');
+  // 跳转到该角色的首页
+  switchPage(ROLE_INFO[role].home);
+}
+
+// ── 简单导航 ──
+document.querySelectorAll('.nav-item').forEach(el => {
+  el.addEventListener('click', () => {
+    switchPage(el.dataset.page);
+  });
+});
+
+// ── 岗位考核表数据 ──
+const PERF_FORMS = {
+  "服务官": {
+    result: [
+      {name:"入驻企业数", target:"5家", weight:"20%"},
+      {name:"入驻满意度", target:"4.5/5", weight:"20%"},
+      {name:"响应速度/问题解决时效", target:"≤4h", weight:"20%"}
+    ],
+    behavior: [
+      {name:"招商力", anchor:"L1执行SOP → L2制定计划 → L3开拓渠道"},
+      {name:"服务力", anchor:"L1完成引导 → L2识别瓶颈 → L3提升满意度"},
+      {name:"AI力", anchor:"L1使用1-2个 → L2应用工作 → L3驱动策略"},
+      {name:"协同力", anchor:"L1基本备份 → L2熟练备份 → L3跨岗创新"}
+    ]
+  },
+  "运营官": {
+    result: [
+      {name:"活动场次", target:"4场/月", weight:"20%"},
+      {name:"内容产出量", target:"12篇/月", weight:"20%"},
+      {name:"社群活跃度", target:"DAU≥200", weight:"20%"}
+    ],
+    behavior: [
+      {name:"活动力", anchor:"L1执行SOP → L2独立策划 → L3打造IP"},
+      {name:"内容力", anchor:"L1公众号 → L2多平台 → L3内容矩阵"},
+      {name:"AI力", anchor:"L1使用1-2个 → L2应用工作 → L3驱动策略"},
+      {name:"协同力", anchor:"L1基本备份 → L2熟练备份 → L3跨岗创新"}
+    ]
+  },
+  "行政": {
+    result: [
+      {name:"事务完成率/及时性", target:"100%", weight:"30%"},
+      {name:"内部满意度", target:"4.3/5", weight:"30%"}
+    ],
+    behavior: [
+      {name:"执行力", anchor:"L1按单执行 → L2主动优化 → L3流程建设"},
+      {name:"协同力", anchor:"L1基本备份 → L2熟练备份 → L3跨岗创新"},
+      {name:"AI力", anchor:"L1使用1-2个 → L2应用工作 → L3驱动策略"}
+    ]
+  },
+  "副手": {
+    result: [
+      {name:"街道满意度(协助对接)", target:"参与对接≥2次", weight:"20%"},
+      {name:"场地经营数据(参与跟学)", target:"跟学OPC引入/流失", weight:"20%"},
+      {name:"团队协作支持", target:"代行日常管理≥3次", weight:"20%"}
+    ],
+    behavior: [
+      {name:"团队管理力(预备)", anchor:"L1协助分工 → L2独立带小组 → L3代行管理"},
+      {name:"协同力", anchor:"L1基本备份 → L2熟练备份 → L3跨岗创新"},
+      {name:"AI力", anchor:"L1使用1-2个 → L2应用工作 → L3驱动策略"}
+    ]
+  },
+  "场地负责人": {
+    result: [
+      {name:"街道满意度", target:"≥4.5/5", weight:"12%"},
+      {name:"在驻OPC数量", target:"≥45家", weight:"12%"},
+      {name:"明星OPC引入数量", target:"≥2家/季", weight:"12%"},
+      {name:"OPC流失数量(负向)", target:"≤1家/季", weight:"12%"},
+      {name:"公司品牌曝光量", target:"≥10次/季", weight:"6%"},
+      {name:"团队留存率", target:"≥90%", weight:"6%"}
+    ],
+    behavior: [
+      {name:"团队管理力", anchor:"L1日常管理 → L2培养下属 → L3管多场地"},
+      {name:"经营决策力", anchor:"L1看懂P&L → L2优化成本 → L3定预算"},
+      {name:"AI力", anchor:"L1使用1-2个 → L2应用工作 → L3驱动策略"},
+      {name:"协同力", anchor:"L1基本备份 → L2熟练备份 → L3跨岗创新"}
+    ]
+  }
+};
+
+// ── 切换岗位考核表 Tab ──
+function switchPerfForm(role){
+  document.querySelectorAll('#perf-form-tabs .btn').forEach(b => {
+    b.className = b.innerText === role ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm';
+  });
+  const f = PERF_FORMS[role];
+  const container = document.getElementById('perf-form-content');
+  const resultRows = f.result.map(r => `<tr><td>${r.name}</td><td>${r.target}</td><td>${r.weight}</td></tr>`).join('');
+  const behaviorRows = f.behavior.map(b => `<tr><td><strong>${b.name}</strong><div style="font-size:11px;color:#6b7280;">${b.anchor}</div></td><td style="width:120px;"><span class="tag tag-blue">对齐能力阶梯</span></td></tr>`).join('');
+  container.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+      <div class="card"><div class="card-header"><span class="icon">▩</span> 结果指标 (60%)</div>
+        <table><thead><tr><th>指标</th><th>目标值</th><th>权重</th></tr></thead><tbody>${resultRows}</tbody></table>
+      </div>
+      <div class="card"><div class="card-header"><span class="icon">◎</span> 能力行为 (40%)</div>
+        <table><thead><tr><th>维度</th><th>评分标准</th></tr></thead><tbody>${behaviorRows}</tbody></table>
+      </div>
+    </div>
+    <div class="card"><div class="card-header"><span class="icon">◫</span> 等级映射</div>
+      <div style="font-size:13px;">
+        <span class="tag tag-green">S 卓越 ≥4.5</span>
+        <span class="tag tag-blue">A 优秀 3.8-4.4</span>
+        <span class="tag tag-orange">B 良好 3.0-3.7</span>
+        <span class="tag tag-red">C 待改进 2.0-2.9</span>
+        <span class="tag tag-red">D 不达标 &lt;2.0</span>
+        <span style="color:#6b7280;margin-left:8px;">总分 = 结果指标×60% + 能力行为×40%</span>
+      </div>
+    </div>`;
+}
+
+// ── 个人绩效渲染 ──
+const PERF_ROLE_MAP = {
+  "场地负责人":{result:["街道满意度","在驻OPC数量","明星OPC引入","OPC流失","品牌曝光","团队留存"]},
+  "副手":{result:["街道满意度(协助)","场地经营(跟学)","团队协作支持"]},
+  "服务官":{result:["入驻企业数","入驻满意度","响应速度"]},
+  "运营官":{result:["活动场次","内容产出量","社群活跃度"]},
+  "行政":{result:["事务完成率","内部满意度"]}
+};
+const PERF_BEHAVIOR = ["专业力","AI力","数据力","协同力"];
+
+function renderPerf(name){
+  const emp = EMPLOYEES.find(e => e.name === name);
+  if(!emp) return;
+  const role = emp.role.replace('(待入职)','');
+  const cfg = PERF_ROLE_MAP[role] || PERF_ROLE_MAP["服务官"];
+
+  // 结果指标
+  const resultBody = document.getElementById('perf-result-body');
+  resultBody.innerHTML = cfg.result.map((r,i) => {
+    const score = (3.5 + ((name.charCodeAt(0)+i)%10)/10).toFixed(1);
+    return `<tr><td>${r}</td><td>达标</td><td>${score}</td><td><span class="tag ${score>=3.8?'tag-green':score>=3.0?'tag-orange':'tag-red'}">${score}</span></td></tr>`;
+  }).join('');
+
+  // 能力行为 (上级评 vs 360多源均值, 偏差≥1.5标黄)
+  const behaviorBody = document.getElementById('perf-behavior-body');
+  behaviorBody.innerHTML = PERF_BEHAVIOR.map(b => {
+    const self = (3.2 + ((name.charCodeAt(1)+b.length)%10)/10).toFixed(1);
+    const sup = (3.4 + ((name.charCodeAt(2)+b.length)%10)/10).toFixed(1);
+    // 360均值: 多数维度接近上级评, 但AI力/数据力刻意拉低制造偏差示例
+    const _360 = (b === 'AI力' || b === '数据力')
+      ? (2.0 + ((name.charCodeAt(0)+b.length)%8)/10).toFixed(1)
+      : (sup - 0.2 + ((name.charCodeAt(3)%5))/10).toFixed(1);
+    const diff = (sup - _360).toFixed(1);
+    const flag = Math.abs(diff) >= 1.5;
+    return `<tr>
+      <td>${b}</td>
+      <td>${self}</td>
+      <td><strong>${sup}</strong></td>
+      <td>${_360}</td>
+      <td>${flag ? `<span class="tag tag-orange">⚠ ${diff}</span>` : `<span style="color:#6b7280;">${diff}</span>`}</td>
+    </tr>`;
+  }).join('');
+
+  // 综合
+  const total = (3.6 + (name.charCodeAt(0)%6)/10).toFixed(1);
+  const grade = total>=4.5?'S':total>=3.8?'A':total>=3.0?'B':total>=2.0?'C':'D';
+  const totalEl = document.getElementById('perf-total');
+  totalEl.innerHTML = `综合得分 <strong style="font-size:18px;">${total}</strong> · 等级 <span class="tag tag-green">${grade}</span> · 回写能力画像「绩效」维度 · 计入九宫格绩效轴(近4期均分)`;
+
+  // 历史绩效
+  renderPerfHistory(name);
+}
+
+function renderPerfHistory(name){
+  const chart = document.getElementById('perf-history-chart');
+  const body = document.getElementById('perf-history-body');
+  const months = ['25-11','25-12','26-01','26-02','26-03','26-04','26-05','26-06','26-07','26-08','26-09','26-10'];
+  const grades = ['B','B','B','A','A','B','A','A','B','A','A','A'];
+  const colors = {S:'#059669',A:'#7c5cfc',B:'#f59e0b',C:'#dc2626',D:'#9ca3af'};
+  const vals = {S:5,A:4,B:3,C:2,D:1};
+
+  chart.innerHTML = months.map((m,i) => {
+    const g = grades[i];
+    const h = vals[g]*30;
+    return `<div style="flex:1;text-align:center;display:flex;flex-direction:column;justify-content:flex-end;">
+      <div style="font-size:10px;color:#6b7280;">${g}</div>
+      <div style="background:${colors[g]};height:${h}px;border-radius:4px 4px 0 0;"></div>
+      <div style="font-size:9px;color:#9ca3af;margin-top:4px;">${m}</div>
+    </div>`;
+  }).join('');
+
+  body.innerHTML = months.map((m,i) => {
+    const g = grades[i];
+    const result = (3.4 + (i%5)/10).toFixed(1);
+    const behavior = (3.5 + (i%4)/10).toFixed(1);
+    const total = (3.5 + (i%6)/10).toFixed(1);
+    return `<tr><td>${m}</td><td>${result}</td><td>${behavior}</td><td>${total}</td><td><span class="tag ${vals[g]>=4?'tag-green':vals[g]>=3?'tag-orange':'tag-red'}">${g}</span></td></tr>`;
+  }).join('');
+}
+
+// ── 个人绩效 Tab 切换 ──
+function switchPerfTab(tab){
+  document.getElementById('perf-tab-month').className = tab==='month' ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm';
+  document.getElementById('perf-tab-history').className = tab==='history' ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm';
+  document.getElementById('perf-month').style.display = tab==='month' ? 'block' : 'none';
+  document.getElementById('perf-history').style.display = tab==='history' ? 'block' : 'none';
+}
+
+// ── 场地数据 + 组织架构图 ──
+const SITES = {
+  "杭州未科EFC": {
+    label: "杭州未科 · EFC OPC",
+    subtitle: "场地负责人：李明 · 团队8人 · 运营2年 · 上次续约2026-03",
+    stats: [
+      {label:"入驻OPC数", value:"47", trend:"↑ 本季+6", cls:"up"},
+      {label:"入驻满意度", value:"4.6", trend:"↑ /5", cls:"up"},
+      {label:"场地技能均分", value:"3.8", trend:"↑ 全组织第1", cls:"up"},
+      {label:"续约剩余", value:"5月", trend:"待启动续约评估", cls:"warn"}
+    ],
+    leader: {name:"李明", role:"场地负责人", level:"L2 优秀", color:"#7c5cfc"},
+    deputy: {name:"张薇", role:"副手", level:"L2 中阶", color:"#6366f1"},
+    members: [
+      {name:"陈凡", role:"服务官", level:"L2 中阶", color:"#8b5cf6"},
+      {name:"林颖", role:"服务官", level:"L2 中阶", color:"#a78bfa"},
+      {name:"赵辉", role:"服务官", level:"L1 初阶", color:"#c4b5fd"},
+      {name:"周敏", role:"运营官", level:"L3 高阶", color:"#7c5cfc"},
+      {name:"吴涛", role:"运营官", level:"L2 中阶", color:"#6366f1"},
+      {name:"孙静", role:"行政", level:"L2 骨干", color:"#a78bfa"}
+    ]
+  },
+  "上海浦东张江": {
+    label: "上海浦东 · 张江OPC",
+    subtitle: "场地负责人：王芳 · 团队8人 · 运营1.5年 · 上次续约2026-01",
+    stats: [
+      {label:"入驻OPC数", value:"39", trend:"↑ 本季+3", cls:"up"},
+      {label:"入驻满意度", value:"4.2", trend:"→ /5", cls:"warn"},
+      {label:"场地技能均分", value:"3.2", trend:"↓ AI力短板", cls:"down"},
+      {label:"续约剩余", value:"3月", trend:"待启动续约评估", cls:"warn"}
+    ],
+    leader: {name:"王芳", role:"场地负责人", level:"L1 合格", color:"#7c5cfc"},
+    deputy: {name:"郑强", role:"副手", level:"L2 中阶", color:"#6366f1"},
+    members: [
+      {name:"李娜", role:"服务官", level:"L2 中阶", color:"#8b5cf6"},
+      {name:"周杰", role:"服务官", level:"L1 初阶", color:"#a78bfa"},
+      {name:"钱丽", role:"服务官", level:"L1 初阶", color:"#c4b5fd"},
+      {name:"孙磊", role:"运营官", level:"L2 中阶", color:"#7c5cfc"},
+      {name:"杨雪", role:"运营官", level:"L1 初阶", color:"#6366f1"},
+      {name:"朱敏", role:"行政", level:"L2 骨干", color:"#a78bfa"}
+    ]
+  },
+  "成都武侯天府": {
+    label: "成都武侯 · 天府OPC",
+    subtitle: "场地负责人：陈刚 · 团队5人(缺编3人) · 新开6月",
+    stats: [
+      {label:"入驻OPC数", value:"18", trend:"↑ 新开增长", cls:"up"},
+      {label:"入驻满意度", value:"4.0", trend:"→ /5", cls:"warn"},
+      {label:"场地技能均分", value:"2.8", trend:"↓ 数据力短板", cls:"down"},
+      {label:"缺编", value:"3人", trend:"服务官2+运营官1", cls:"warn"}
+    ],
+    leader: {name:"陈刚", role:"场地负责人", level:"L1 合格", color:"#7c5cfc"},
+    deputy: null,
+    members: [
+      {name:"刘洋", role:"服务官", level:"L2 中阶", color:"#8b5cf6"},
+      {name:"何静", role:"服务官", level:"L1 初阶", color:"#a78bfa"},
+      {name:"罗伟", role:"运营官", level:"L1 初阶", color:"#7c5cfc"},
+      {name:"邓丽", role:"行政", level:"L1 初阶", color:"#a78bfa"}
+    ]
+  }
+};
+
+const AVATAR_CHAR = { "李明":"李","张薇":"薇","王芳":"王","郑强":"郑","陈刚":"陈","陈凡":"凡","林颖":"颖","赵辉":"辉","周敏":"敏","吴涛":"涛","孙静":"静","李娜":"娜","周杰":"杰","钱丽":"丽","孙磊":"磊","杨雪":"雪","朱敏":"朱","刘洋":"刘","何静":"何","罗伟":"罗","邓丽":"邓" };
+
+function orgNodeHtml(p){
+  const ch = AVATAR_CHAR[p.name] || p.name[0];
+  return `<div class="org-node" onclick="viewPerson('${p.name}','profile')">
+    <div class="org-avatar" style="background:${p.color};">${ch}</div>
+    <div class="org-name">${p.name}</div>
+    <div class="org-role">${p.role} · ${p.level}</div>
+  </div>`;
+}
+
+function renderOrgChart(siteKey){
+  const site = SITES[siteKey];
+  const container = document.getElementById('org-chart');
+  const memberNodes = site.members.map(m => `<div class="org-branch"><div class="org-vline-child"></div>${orgNodeHtml(m)}</div>`).join('');
+  const deputyBlock = site.deputy
+    ? `<div class="org-branch"><div class="org-vline-child"></div>${orgNodeHtml(site.deputy)}</div>`
+    : `<div class="org-branch"><div class="org-vline-child"></div><div class="org-node" style="border-style:dashed;color:#9ca3af;">副手<br><span style="font-size:11px;">(缺编待补)</span></div></div>`;
+  container.innerHTML = `
+    <div class="org-chart">
+      ${orgNodeHtml(site.leader)}
+      <div class="org-vline"></div>
+      <div class="org-children-wrap">
+        <div class="org-hbar"></div>
+        <div class="org-children">
+          ${deputyBlock}
+          ${memberNodes}
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderSiteStats(siteKey){
+  const site = SITES[siteKey];
+  const statsEl = document.getElementById('site-stats');
+  statsEl.innerHTML = site.stats.map(s =>
+    `<div class="stat-card"><div class="label">${s.label}</div><div class="value">${s.value}</div><div class="trend ${s.cls}">${s.trend}</div></div>`
+  ).join('');
+}
+
+function switchSite(siteKey){
+  const site = SITES[siteKey];
+  document.querySelectorAll('#site-tabs .btn').forEach(b => {
+    const key = b.innerText.includes('杭州') ? '杭州未科EFC' : b.innerText.includes('上海') ? '上海浦东张江' : '成都武侯天府';
+    b.className = key === siteKey ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm';
+  });
+  document.getElementById('site-title').textContent = site.label;
+  document.getElementById('site-subtitle').textContent = site.subtitle;
+  renderSiteStats(siteKey);
+  renderOrgChart(siteKey);
+}
+
+// 初始化
+fillSelects();
+renderRoster();
+switchPerfForm('服务官');
+renderPerf('陈凡');
+switchSite('杭州未科EFC');
+switchRole('owner');
+</script>
+
+</body>
+</html>
